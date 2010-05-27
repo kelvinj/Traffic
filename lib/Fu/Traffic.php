@@ -199,7 +199,7 @@ class Traffic {
 		if (array_key_exists($code, $codes)) {
 			$message = $codes[$code];
 			if (!headers_sent()) {
-				header("HTTP/1.0 $code $message");
+				header("HTTP/1.1 $code $message");
 				return true;
 			}
 		}
