@@ -110,16 +110,30 @@ These options can be set per rule or globally to apply to all subsequent rules:
 - agent: a string or regex to match against the HTTP_USER_AGENT
 - exit_after_callback: whether to exist PHP execution after a request has successfully matched. true=yes, false=no and all subsequent calls to Traffic will be ignored unless unexit() is called.
 
+### Agent
+
     use Fu\Traffic as t;
 
-    // relative_to is an alias to rel, in case you prefer to be more verbose
     t::get('/', function () {
         echo 'Enter 2001 mode.';
     }, array('agent' => 'MSIE 6'));
 
     t::options('agent', 'MSIE 6');
 
-Other methods
+### Qualifying labels with a Regex
+
+Labels (e.g. :userid) can be qualified with a regular expression. The regular expression is passed in as an option and can be either a full regex (e.g. /^[a-z]+$/i), or a simpler regex which Traffic will wrap up (e.g. [a-z]+ becomes /^[a-z]+$/i):
+
+    use Fu\Traffic as t;
+
+    t::get('/users/:userid', array(':userid' => '[a-z]+'), function () {
+        echo 'Enter 2001 mode.';
+    });
+
+    t::options(':userid', '[a-z]+'); // ensures all routes with :userid are qualified in every route
+
+
+Other Methods
 --------------
 
 Traffic has various other methods to help the flow of your routing or to help respond to a request.
@@ -209,24 +223,26 @@ Pass it the HTTP Response code, and it'll send the appropriate HTTP 1.1 header:
 
 Internally used for testing after Trsffic has matched a rule.
 
+Miscellaneous
+--------------
+
+Traffic allows you to pass arguments to get, post, put, delete & rel/relative_to in any order you wish. The callback function is the only required argument:
+
+    use Fu\Traffic as t;
+    t::register_global_functions();
+
+    // valid
+    get('/:tinyurl', function(){}, array(':tinyurl' => '[a-z0-9]{6}'));
+    get('/:tinyurl', array(':tinyurl' => '[a-z0-9]{6}'), function(){});
+    get(function(){});
+    get(function(){}, '/:tinyurl', array(':tinyurl' => '[a-z0-9]{6}'));
+
+    // invalid
+    get('/:tinyurl');
+
+
 TO DO
 ======
-
-### Ability to specify a regular expression for a label which must match for the route to match:
-
-    use Fu\Traffic as t;
-
-    t::get('/users/:userid', function () {
-        echo 'Enter 2001 mode.';
-    }, array(':userid' => '/[0-9]+/'));
-
-### Ability to use options as a first or second argument, instead of the last:
-
-    use Fu\Traffic as t;
-
-    t::get('/users/:userid', array(':userid' => '/[0-9]+/'), function () {
-        echo 'Enter 2001 mode.';
-    });
 
 
 License

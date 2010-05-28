@@ -235,23 +235,25 @@ class Traffic {
 	 * options… etc.
 	 */
 	private function _process_args ($a, $relative = false) {
-		$r = array('path' => '',
+		$r = array('path' => '/',
 				   'callback' => function(){},
 				   'options' => self::options()
 				   );
 
-		switch (true) {
-			case is_string($a[0]):
-				$r['path'] = $a[0];
-				$r['callback'] = $a[1];
-				if (isset($a[2])) $r['options'] = array_merge($r['options'], $a[2]);
-				break;
+		foreach ($a as $k => $v) {
+			switch (true) {
+				case is_string($v):
+					$r['path'] = $v;
+					break;
 
-			case is_callable($a[0]):
-				$r['path'] = '/';
-				$r['callback'] = $a[0];
-				if (isset($a[1])) $r['options'] = array_merge($r['options'], $a[1]);
-				break;
+				case is_callable($v):
+					$r['callback'] = $v;
+					break;
+
+				case is_array($v):
+					$r['options'] = array_merge($r['options'], $v);
+					break;
+			}
 		}
 
 		if ($relative) {
@@ -276,7 +278,7 @@ class Traffic {
 	private function _route ($path, $callback, $options) {
 		static $routes;
 
-		if (self::_exited()) return;
+		if (self::_exited() || !$callback) return;
 
 		// trim / off the path
 		$path = trim($path, '/');
@@ -304,6 +306,7 @@ class Traffic {
 				}
 
 				if (!$agent_found) {
+					array_pop($routes);
 					return;
 				}
 			}
@@ -318,9 +321,23 @@ class Traffic {
 					$params[] = $v[0];
 				}
 				else {
+					// check for a regex rule in the options
+					if ($options[":$k"]) {
+						$regex = $options[":$k"];
+						if (!self::_is_regex($regex)) {
+							$regex = "/^$regex$/i";
+						}
+
+						if (!preg_match($regex, $v[0])) {
+							array_pop($routes);
+							return;
+						}
+					}
+
 					$params[$k] = $v[0];
 				}
 			}
+
 			self::params($params); // sets params
 
 			if (is_callable($callback)) {

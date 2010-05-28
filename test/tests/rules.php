@@ -160,5 +160,146 @@ describe("traffic", function() {
             });
             expect($gather)->to_be('get()');
         });
+
+        it("should allow labels to be qualified with a regex", function() {
+            mimick_request('/user/1234', 'GET');
+            $gather = gather_info(function () {
+
+                t::get('/user/:userid', function (){
+                    echo 'alpha';
+                }, array(':userid' => '/^[a-z]+$/i'));
+
+                t::get('/user/:userid', function (){
+                    echo 'numerical';
+                }, array(':userid' => '/^[0-9]+$/i'));
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('numerical');
+
+            reset_request();
+
+            mimick_request('/user/123456', 'GET');
+            $gather = gather_info(function () {
+                t::get('/user/:userid', function (){
+                    echo 'alpha';
+                }, array(':userid' => '/^[a-z]+$/i'));
+
+                t::get('/user/:userid', function (){
+                    echo 'catch all';
+                });
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('catch all');
+
+            reset_request();
+
+            // simplified regex, Traffic takes care of wrapping it in the right syntax
+            mimick_request('/user/123456', 'GET');
+            $gather = gather_info(function () {
+                t::get('/user/:userid', function (){
+                    echo 'alpha';
+                }, array(':userid' => '[a-z]+'));
+
+                t::get('/user/:userid', array(':userid' => '[0-9]+'), function (){
+                    echo 'numeric';
+                });
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('numeric');
+        });
+
+        it("should allow label qualification using system wide options", function() {
+
+            t::options(':userid', '[a-z]+');
+
+            mimick_request('/user/username', 'GET');
+
+            $gather = gather_info(function () {
+                t::get('/user/:userid', function (){
+                    echo 'alpha';
+                });
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('alpha');
+
+            reset_request();
+
+            mimick_request('/user/user123', 'GET');
+
+            $gather = gather_info(function () {
+                t::get('/user/:userid', function (){
+                    echo 'alpha';
+                });
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('no rules picked up');
+
+            t::options(':userid', '');
+
+            reset_request();
+
+            mimick_request('/user/user123', 'GET');
+
+            $gather = gather_info(function () {
+                t::get('/user/:userid', function (){
+                    echo 'catch all';
+                });
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('catch all');
+
+        });
+
+
+        it("allow arguments to be passed in any order", function() {
+            mimick_request('/user/123', 'GET');
+            $gather = gather_info(function () {
+
+                t::get(
+                       '/user/:userid',
+                       function ($p){echo '1.';t::pass();},
+                       array(':userid' => '/^[0-9]+$/i')
+                       );
+
+                t::get(
+                       '/user/:userid',
+                       array(':userid' => '/^[0-9]+$/i'),
+                       function ($p){echo '2.';t::pass();}
+                       );
+
+                t::get(
+                        array(':userid' => '/^[0-9]+$/i'),
+                       '/user/:userid',
+                       function ($p){echo '3.';t::pass();}
+                       );
+
+                t::get(
+                       array(':userid' => '/^[0-9]+$/i'),
+                       function ($p){echo '4.';t::pass();},
+                       '/user/:userid'
+                       );
+
+                t::get(
+                       function ($p){echo '5.';t::pass();},
+                       '/user/:userid',
+                       array(':userid' => '/^[0-9]+$/i')
+                       );
+
+                t::get(
+                       function ($p){echo '6.';}, // do not pass on, it's the last rule
+                       array(':userid' => '/^[0-9]+$/i'),
+                       '/user/:userid'
+                       );
+
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('1.2.3.4.5.6.');
+        });
     });
 });
