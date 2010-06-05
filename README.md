@@ -241,6 +241,14 @@ Traffic allows you to pass arguments to get, post, put, delete & rel/relative_to
     get('/:tinyurl');
 
 
+### Example Mod Rewrite Rules to throw into you Apache config of .htaccess
+
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} !^/favicon.ico$
+    RewriteRule ^(.*)$ index.php [QSA,L]
+
+
 TO DO
 ======
 
