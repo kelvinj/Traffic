@@ -133,6 +133,76 @@ Labels (e.g. :userid) can be qualified with a regular expression. The regular ex
     t::options(':userid', '[a-z]+'); // ensures all routes with :userid are qualified in every route
 
 
+Callback options
+-----------------
+
+### Closure
+
+As seen in most other example:
+
+	t::get('/users', function () {
+        echo 'List users';
+    });
+
+### Standard PHP callbacks
+
+E.g.:
+
+	t::get('/users', array(new Users, 'list'));
+
+### Multiple callbacks
+
+Multiple callbacks are set in an array, e.g.:
+
+	t::get('/users', array(   array(Auth, 'verify'),   array(new Users, 'list')   ));
+
+### String representations
+
+Warning Fat Free Framework inspired formatting coming up!!
+
+Using PHP's rather verbose syntax can become tedious, so you can use shorter string constructs that represent your classes or objects:
+
+	t::get('/users', array(   'Auth::verify',     'Users->list'  ));
+
+or even better:
+
+	t::get('/users', 'Auth::verify, Users->list');
+
+How very concise.
+
+### Hooks
+
+If you're callback is to an object, Traffic will look to see if any hooks have been defined, and fire them off if defined.
+
+You define a hook by simply adding a method to your class with a particular name, Traffic does the rest, the hooks available are:
+
+- beforeRoute() or before_route() (use the style that suits you)
+- afterRoute() or after_route()
+
+E.g.
+
+	class AdminUsers {
+		function before_route () {
+			// check that we're logged in or something
+		}
+
+		function list () {
+		 // list out some users
+		}
+
+		function after_route () {
+			// log something ro whatever
+		}
+	}
+
+	t::get('/admin/users', 'AdminUsers->list');
+
+
+
+NB: A note on loading classes… Traffic will not try and load your class. Make sure your class is already included, OR setup an autoloader.
+
+
+
 Other Methods
 --------------
 

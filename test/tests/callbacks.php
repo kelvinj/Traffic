@@ -45,6 +45,47 @@ describe("traffic", function() {
             });
             expect($gather)->to_be('index.before.index.after.');
         });
+
+        it("should accept string representations of objects", function() {
+            mimick_request('/', 'GET');
+            $gather = gather_info(function () {
+                t::get('/', array('CallbackTestClass->index', 'CallbackTestClassWithHooks->index' ) );
+            });
+            expect($gather)->to_be('index.before.index.after.');
+        });
+
+        it("should accept string representations of classes", function() {
+            mimick_request('/', 'GET');
+            $gather = gather_info(function () {
+                t::get('/', array('CallbackTestClass::index', 'CallbackTestClassWithHooks::index' ) );
+            });
+            expect($gather)->to_be('index.index.');
+        });
+
+        it("should accept a mixture of all the ways one can define a callback", function() {
+            mimick_request('/', 'GET');
+            $gather = gather_info(function () {
+                t::get('/',
+                    array(
+                        'CallbackTestClass::index',
+                        'CallbackTestClassWithHooks->index',
+                        array(CallbackTestClass, 'index'),
+                        array(new CallbackTestClassWithHooks, 'index')
+                    )
+                );
+            });
+            expect($gather)->to_be('index.before.index.after.index.before.index.after.');
+        });
+
+        it("should accept a string representation of a callback", function() {
+            mimick_request('/', 'GET');
+            $gather = gather_info(function () {
+                t::get('/', 'CallbackTestClass::index, CallbackTestClassWithHooks->index');
+            });
+            expect($gather)->to_be('index.before.index.after.');
+        });
+
+
     });
 });
 

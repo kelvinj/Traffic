@@ -241,25 +241,51 @@ class Traffic {
 				   );
 
 		foreach ($a as $v) {
-			switch (true) {
-				case is_string($v):
+			if (is_string($v)) {
+				if (strpos($v, '->') === false && strpos($v, '::') === false) { // not a string representation of a callback
 					$r['path'] = $v;
-					break;
+					continue;
+				}
+				else { // it IS a callback
+					$parts = explode(',', $v);
+					array_walk($parts, function (&$v){ $v = trim($v); });
+					$v = $parts;
+					$was_string = 1;
+				}
+			}
 
-				case is_callable($v):
-					$r['callback'] = $v;
-					break;
+			if (is_callable($v)) {
+				$r['callback'] = $v;
+				continue;
+			}
 
-				case is_array($v):
-					if ($v[0] && is_callable($v[0])) {
-						$cbo = new \stdClass;
-						$cbo->callbacks = $v;
-						$r['callback'] = $cbo;
+			if (is_array($v)) {
+				if ($v[0]) { // means that this array is not an options array, as that has keys
+					$cbo = new \stdClass;
+					$cbo->callbacks = array();
+
+					foreach ($v as $arg) {
+						if (is_callable($arg)) {
+							$cbo->callbacks[] = $arg;
+						}
+						else if (is_string($arg)) {
+							if (strpos($arg, '->') !== false) {
+								list($klass, $method) = explode('->', $arg);
+								$cbo->callbacks[] = array(new $klass, $method);
+							}
+							else if (strpos($arg, '::') !== false) {
+								list($klass, $method) = explode('::', $arg);
+								$cbo->callbacks[] = array($klass, $method);
+							}
+						}
 					}
-					else {
-						$r['options'] = array_merge($r['options'], $v);
-					}
-					break;
+
+					$r['callback'] = $cbo;
+				}
+				else {
+					$r['options'] = array_merge($r['options'], $v);
+				}
+				continue;
 			}
 		}
 
