@@ -154,7 +154,7 @@ E.g.:
 
 Multiple callbacks are set in an array, e.g.:
 
-	t::get('/users', array(   array(Auth, 'verify'),   array(new Users, 'list')   ));
+	t::get('/users', array(   array('Auth', 'verify'),   array(new Users, 'list')   ));
 
 ### String representations
 
