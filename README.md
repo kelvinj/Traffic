@@ -172,7 +172,7 @@ How very concise.
 
 ### Hooks
 
-If you're callback is to an object, Traffic will look to see if any hooks have been defined, and fire them off if defined.
+If your callback is to an object, Traffic will look to see if any hooks have been defined, and fire them off if defined.
 
 You define a hook by simply adding a method to your class with a particular name, Traffic does the rest, the hooks available are:
 
