@@ -80,7 +80,7 @@ class Traffic {
 	/**
 	 * function acts as a getter and setter.
 	 *
-	 * Calling pass() will set the statis $pass variable to true
+	 * Calling pass() will set the static $pass variable to true
 	 * the next call to pass(1) will return true, meaning to pass onto the next rule and set $pass to false
 	 * subsequent calls to pass(1) will return false until pass() is called
 	 */
@@ -240,7 +240,7 @@ class Traffic {
 				   'options' => self::options()
 				   );
 
-		foreach ($a as $k => $v) {
+		foreach ($a as $v) {
 			switch (true) {
 				case is_string($v):
 					$r['path'] = $v;
@@ -251,7 +251,14 @@ class Traffic {
 					break;
 
 				case is_array($v):
-					$r['options'] = array_merge($r['options'], $v);
+					if ($v[0] && is_callable($v[0])) {
+						$cbo = new \stdClass;
+						$cbo->callbacks = $v;
+						$r['callback'] = $cbo;
+					}
+					else {
+						$r['options'] = array_merge($r['options'], $v);
+					}
 					break;
 			}
 		}
@@ -340,12 +347,72 @@ class Traffic {
 
 			self::params($params); // sets params
 
-			if (is_callable($callback)) {
-				$r = $callback($params);
+			$callbacks = array(); // array of callbacks that we will trigger for this route
+
+			if (is_object($callback) && get_class($callback) != 'Closure') {
+				$callback_object = $callback;
+			}
+			else {
+				$callback_object = new \stdClass;
+				$callback_object->callbacks = array($callback);
+			}
+
+			foreach ($callback_object->callbacks as $cb) {
+				if (is_callable($cb)) { // we have a callback
+					if (is_array($cb) && is_object($cb[0]) && get_class($cb[0]) != 'Closure') { // check for pre route hooks to add
+						$klass = $cb[0];
+						if (method_exists($klass, 'before_route')) {
+							$callbacks[] = array(
+								'callback' => array($klass, 'before_route'),
+								'params' => array_merge($params, array('method' => $cb[1]))
+							);
+						}
+						else if (method_exists($klass, 'beforeRoute')) {
+							$callbacks[] = array(
+								'callback' => array($klass, 'beforeRoute'),
+								'params' => array_merge($params, array('method' => $cb[1]))
+							);
+						}
+					}
+
+					$callbacks[] = array(
+						'callback' => $cb,
+						'params' => $params
+					);
+
+					if (is_array($cb) && is_object($cb[0]) && get_class($cb[0]) != 'Closure') { // check for post route hooks to add
+						$klass = $cb[0];
+						if (method_exists($klass, 'after_route')) {
+							$callbacks[] = array(
+								'callback' => array($klass, 'after_route'),
+								'params' => array_merge($params, array('method' => $cb[1]))
+							);
+						}
+						else if (method_exists($klass, 'afterRoute')) {
+							$callbacks[] = array(
+								'callback' => array($klass, 'afterRoute'),
+								'params' => array_merge($params, array('method' => $cb[1]))
+							);
+						}
+					}
+				}
+			}
+
+			foreach ($callbacks as $v) {
+				$callback = $v['callback'];
+				$params = $v['params'];
+
+				if (is_callable($callback)) {
+					$r = call_user_func($callback, $params);
+				}
+
+				$skip_exit = !!(self::pass(true) || $r == -1);
+				if ($skip_exit) {
+					break;
+				}
 			}
 
 			$last_route = array_pop($routes);
-			$skip_exit = !!(self::pass(true) || $r == -1);
 
 			if (!$skip_exit && $last_route['options']['_rel'] == false) {
 				return self::_exit_routine(); // we found the deepest route, so let's kill it

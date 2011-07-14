@@ -1,6 +1,5 @@
 <?php
 // php run.php
-
 require __DIR__.'/pecs/lib/pecs.php';
 require __DIR__.'/../lib/Fu/Traffic.php';
 
@@ -10,6 +9,7 @@ set_error_handler('\pecs\errorToException', E_WARNING);
 require __DIR__.'/tests/rest.php';
 require __DIR__.'/tests/paths.php';
 require __DIR__.'/tests/rules.php';
+require __DIR__.'/tests/callbacks.php';
 
 // run 'em
 \pecs\run();
