@@ -45,6 +45,8 @@ class Traffic {
 		self::_route($args['path'], $args['callback'], $args['options']);
 	}
 
+	public function req () {call_user_func_array('self::request', func_get_args());}
+
 	// used to construct nested… need to refactor following code, which is nice :)
 	public function rel () {
 		if (self::_exited()) return;
