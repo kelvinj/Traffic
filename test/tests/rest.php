@@ -6,7 +6,7 @@ use Fu\Traffic as t;
 describe("traffic", function() {
     before_each('reset_request');
 
-    describe("handles common HTTP request methods", function() {
+describe("handles common HTTP request methods", function() {
         it("should run the correct rule according to the HTTP request", function() {
             // get
             mimick_request('/', 'GET');

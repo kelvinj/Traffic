@@ -161,7 +161,7 @@ class Traffic {
 				$rq = $_SERVER['PATH_INFO'];
 			}
 			else {
-				$rq = ($_SERVER['REDIRECT_URL']) ? $_SERVER['REDIRECT_URL'] : $_SERVER['REQUEST_URI'];
+				$rq = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 			}
 
 			$rq = rtrim($rq, '/');
@@ -558,6 +558,7 @@ class Traffic {
 		static $options=array(
 			'html'=> 'text/html',
 			'js'  => 'text/javascript',
+			'json'=> 'application/json',
 			'css' => 'text/css',
 			'gif' => 'image/gif',
 			'jpg' => 'image/jpeg',

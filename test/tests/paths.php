@@ -179,4 +179,19 @@ describe("traffic", function() {
             expect($gather)->to_be('3 wildcards. 1, 2, 3');
         });
     });
+
+    describe("funny characters", function() {
+        it("should support funny characters splats", function() {
+
+            // path has trailing slash but not route
+            mimick_request('/user/Kélvin', 'GET');
+            $gather = gather_info(function () {
+                t::get('/user/*', function ($p) {
+                    echo $p['splats'][0];
+                });
+                t::not_found (function(){echo 'no rules picked up';});
+            });
+            expect($gather)->to_be('Kélvin');
+        });
+    });
 });
